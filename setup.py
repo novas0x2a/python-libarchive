@@ -25,14 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from os import environ
-
 try:
     from setuptools import setup, Extension
-    from setuptools.command.build_ext import build_ext
 except ImportError:
     from distutils.core import setup, Extension
-    from distutils.command.build_ext import build_ext
 
 
 name = 'python-libarchive'
@@ -44,50 +40,9 @@ download_url = "http://" + name + ".googlecode.com/files/" + name + "-" + \
                                                           versrel + ".tar.gz"
 long_description = file(readme).read()
 
-class build_ext_extra(build_ext, object):
-    """
-    Extend build_ext allowing extra_compile_args and extra_link_args to be set
-    on the command-line.
-    """
-    user_options = build_ext.user_options
-    user_options.append(
-        ('extra-compile-args=', None,
-         'Extra arguments passed directly to the compiler')
-        )
-    user_options.append(
-        ('extra-link-args=', None,
-         'Extra arguments passed directly to the linker')
-        )
-
-    def initialize_options(self):
-        build_ext.initialize_options(self)
-        self.extra_compile_args = None
-        self.extra_link_args = None
-
-    def build_extension(self, ext):
-        if self.extra_compile_args:
-            ext.extra_compile_args.append(self.extra_compile_args)
-        if self.extra_link_args:
-            ext.extra_link_args.append(self.extra_link_args)
-        super(build_ext_extra, self).build_extension(ext)
-
-
-# Use a provided libarchive else default to hard-coded path.
-libarchivePrefix = environ.get('LIBARCHIVE_PREFIX')
-if libarchivePrefix:
-    extra_compile_args = ['-I{0}/include'.format(libarchivePrefix)]
-    extra_link_args = ['-Wl,-rpath={0}/lib'.format(libarchivePrefix)]
-    environ['LDFLAGS'] = '-L{0}/lib {1}'.format(libarchivePrefix,
-                                                environ.get('LDFLAGS', ''))
-else:
-    extra_compile_args = []
-    extra_link_args = ['-l:libarchive.so.13.1.2']
-
 __libarchive = Extension(name='libarchive.__libarchive',
                         sources=['libarchive/_libarchive_wrap.c'],
                         libraries=['archive'],
-                        extra_compile_args=extra_compile_args,
-                        extra_link_args=extra_link_args,
                         include_dirs=['libarchive'],
                         )
 
@@ -112,8 +67,5 @@ setup(name = name,
           'Topic :: System :: Archiving :: Compression',
           'Topic :: Software Development :: Libraries :: Python Modules',
       ],
-      cmdclass = {
-        'build_ext': build_ext_extra,
-      },
       ext_modules = [__libarchive],
       )
